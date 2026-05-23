@@ -18,12 +18,16 @@
       font-size: 1.8rem;
       color: #2d3748;
     }
+    .top-card,
+    .grid {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .top-card { margin-bottom: 20px; }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
-      max-width: 1000px;
-      margin: 0 auto;
     }
     .card {
       background: white;
@@ -32,6 +36,28 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     }
     .card h2 { font-size: 1.1rem; margin-bottom: 16px; color: #4a5568; }
+    .field-label {
+      display: block;
+      font-size: 0.9rem;
+      color: #4a5568;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .text-input,
+    #goal-input,
+    #task-input,
+    #log-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .helper-text {
+      margin-top: 8px;
+      color: #718096;
+      font-size: 0.85rem;
+    }
 
     /* タイマー */
     #timer-display {
@@ -48,13 +74,20 @@
       margin-bottom: 16px;
     }
     .btn {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       padding: 8px 18px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-size: 0.95rem;
       margin: 4px;
+    }
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
     .btn-red { background: #e53e3e; color: white; }
     .btn-gray { background: #e2e8f0; color: #4a5568; }
@@ -63,14 +96,7 @@
     .timer-btns { text-align: center; }
 
     /* 目標 */
-    #goal-input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #cbd5e0;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      margin-bottom: 10px;
-    }
+    #goal-input { margin-bottom: 10px; }
     #goal-display {
       background: #ebf8ff;
       border-left: 4px solid #3182ce;
@@ -83,13 +109,7 @@
 
     /* タスク */
     .task-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    #task-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #cbd5e0;
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
+    #task-input { flex: 1; }
     #task-list { list-style: none; }
     #task-list li {
       display: flex;
@@ -112,13 +132,7 @@
 
     /* 学習ログ */
     .log-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    #log-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #cbd5e0;
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
+    #log-input { flex: 1; }
     #log-list { list-style: none; }
     #log-list li {
       padding: 6px 0;
@@ -127,13 +141,125 @@
       color: #4a5568;
     }
     #log-list li span.time { color: #a0aec0; font-size: 0.8rem; margin-right: 8px; }
+
+    /* AI機能 */
+    .wide-card {
+      grid-column: 1 / -1;
+    }
+    .upload-dropzone {
+      border: 2px dashed #90cdf4;
+      border-radius: 12px;
+      background: #f7fafc;
+      padding: 24px 16px;
+      text-align: center;
+      color: #4a5568;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      cursor: pointer;
+    }
+    .upload-dropzone.dragover {
+      border-color: #3182ce;
+      background: #ebf8ff;
+    }
+    .upload-dropzone strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #2d3748;
+    }
+    .file-name {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #edf2f7;
+      color: #2d3748;
+      font-size: 0.9rem;
+      word-break: break-word;
+    }
+    .status-box,
+    .result-box {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .status-box {
+      display: none;
+      background: #fff5f5;
+      color: #c53030;
+      border: 1px solid #feb2b2;
+    }
+    .result-box {
+      display: none;
+      background: #f7fafc;
+      color: #2d3748;
+      border: 1px solid #e2e8f0;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.45);
+      border-top-color: white;
+      border-radius: 50%;
+      display: none;
+      animation: spin 0.8s linear infinite;
+    }
+    .btn-gray .spinner {
+      border: 2px solid rgba(74,85,104,0.3);
+      border-top-color: #4a5568;
+    }
+    .btn.loading .spinner {
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @media (max-width: 640px) {
+      .task-input-row,
+      .log-input-row {
+        flex-direction: column;
+      }
+      .btn {
+        width: 100%;
+        margin: 4px 0;
+      }
+      .timer-btns .btn {
+        width: auto;
+        margin: 4px;
+      }
+    }
   </style>
 </head>
 <body>
 
 <h1>📚 学習ダッシュボード</h1>
 
+<div class="top-card card">
+  <h2>🔐 OpenAI APIキー</h2>
+  <label class="field-label" for="api-key-input">APIキーを入力</label>
+  <input type="password" id="api-key-input" class="text-input" placeholder="sk-..." autocomplete="off" />
+  <p class="helper-text">APIキーはこのブラウザの localStorage にのみ保存され、入力欄では非表示になります。共有端末や信頼できない環境では保存しないでください。</p>
+</div>
+
 <div class="grid">
+
+  <!-- AI要約＆問題生成 -->
+  <div class="card wide-card">
+    <h2>🤖 AI要約＆記述問題生成</h2>
+    <input type="file" id="file-input" accept=".pdf,.txt,image/jpeg,image/png,image/webp" hidden />
+    <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="ファイルをアップロード">
+      <strong>PDF / TXT / 画像ファイルをアップロード</strong>
+      <span>ドラッグ＆ドロップ、またはクリックしてファイルを選択</span>
+    </div>
+    <div id="file-name" class="file-name">未選択</div>
+    <button id="generate-btn" class="btn btn-blue" style="margin-top:16px;">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>要約＆問題生成</span>
+    </button>
+    <div id="error-message" class="status-box" role="alert"></div>
+    <div id="result-box" class="result-box"></div>
+  </div>
 
   <!-- ポモドーロタイマー -->
   <div class="card">
@@ -177,7 +303,24 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js';
+  }
+
+  const API_KEY_STORAGE = 'openai-api-key';
+  const AI_PROMPT_TEMPLATE = `以下の内容を読んで、\n1. 200字程度で要約してください\n2. この内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
+  const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const apiKeyInput = document.getElementById('api-key-input');
+  const fileInput = document.getElementById('file-input');
+  const uploadDropzone = document.getElementById('upload-dropzone');
+  const fileNameDisplay = document.getElementById('file-name');
+  const generateBtn = document.getElementById('generate-btn');
+  const errorMessage = document.getElementById('error-message');
+  const resultBox = document.getElementById('result-box');
+  let selectedFile = null;
+
   // --- タイマー ---
   let totalSeconds = 25 * 60;
   let timerInterval = null;
@@ -285,6 +428,212 @@
     document.getElementById('log-input').value = '';
     renderLogs();
   }
+
+  function setSelectedFile(file) {
+    if (!file) return;
+    selectedFile = file;
+    fileNameDisplay.textContent = `選択中: ${file.name}`;
+    hideError();
+  }
+
+  function isSupportedFile(file) {
+    if (!file) return false;
+    const lowerName = file.name.toLowerCase();
+    return lowerName.endsWith('.pdf') || lowerName.endsWith('.txt') || SUPPORTED_IMAGE_TYPES.includes(file.type);
+  }
+
+  function showError(message) {
+    errorMessage.style.display = 'block';
+    errorMessage.textContent = message;
+  }
+
+  function hideError() {
+    errorMessage.style.display = 'none';
+    errorMessage.textContent = '';
+  }
+
+  function showResult(content) {
+    resultBox.style.display = 'block';
+    resultBox.textContent = content;
+  }
+
+  function setLoading(isLoading) {
+    generateBtn.disabled = isLoading;
+    generateBtn.classList.toggle('loading', isLoading);
+  }
+
+  function saveApiKey() {
+    const value = apiKeyInput.value.trim();
+    if (value) {
+      localStorage.setItem(API_KEY_STORAGE, value);
+    } else {
+      localStorage.removeItem(API_KEY_STORAGE);
+    }
+  }
+
+  function readFile(file, method) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました。'));
+      reader[method](file);
+    });
+  }
+
+  async function extractPdfText(file) {
+    if (!window.pdfjsLib) {
+      throw new Error('PDF読み込みライブラリの初期化に失敗しました。ページを再読み込みしてください。');
+    }
+    const arrayBuffer = await readFile(file, 'readAsArrayBuffer');
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const texts = [];
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(item => item.str).join(' ');
+      texts.push(pageText);
+    }
+    return texts.join('\n');
+  }
+
+  async function buildRequestPayload(file) {
+    const lowerName = file.name.toLowerCase();
+
+    if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+      const imageDataUrl = await readFile(file, 'readAsDataURL');
+      return {
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: AI_PROMPT_TEMPLATE },
+              { type: 'image_url', image_url: { url: imageDataUrl } }
+            ]
+          }
+        ]
+      };
+    }
+
+    const text = lowerName.endsWith('.pdf')
+      ? await extractPdfText(file)
+      : await readFile(file, 'readAsText');
+
+    if (!String(text).trim()) {
+      throw new Error('ファイルから読み取れる内容が見つかりませんでした。別のファイルをお試しください。');
+    }
+
+    return {
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: `${AI_PROMPT_TEMPLATE}\n\n---\n${String(text).trim()}`
+        }
+      ]
+    };
+  }
+
+  async function requestSummaryAndQuestions(payload, apiKey) {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      throw new Error(`OpenAI APIの応答を読み取れませんでした。${parseError.message}`);
+    }
+    if (!response.ok) {
+      const message = data && data.error && data.error.message
+        ? data.error.message
+        : `OpenAI APIの呼び出しに失敗しました。(ステータス: ${response.status})`;
+      throw new Error(message);
+    }
+
+    const content = data?.choices?.[0]?.message?.content || '';
+
+    if (!content) {
+      throw new Error('AIから有効な応答を取得できませんでした。');
+    }
+
+    return content;
+  }
+
+  async function generateSummaryAndQuestions() {
+    const apiKey = apiKeyInput.value.trim();
+    if (!apiKey) {
+      alert('OpenAI APIキーを入力してください。');
+      apiKeyInput.focus();
+      return;
+    }
+    saveApiKey();
+    if (!selectedFile) {
+      showError('ファイルを選択してから実行してください。');
+      return;
+    }
+    hideError();
+    showResult('');
+    resultBox.style.display = 'none';
+    setLoading(true);
+
+    try {
+      const payload = await buildRequestPayload(selectedFile);
+      const result = await requestSummaryAndQuestions(payload, apiKey);
+      showResult(result);
+    } catch (error) {
+      showError(error.message || '処理中にエラーが発生しました。');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleIncomingFile(file) {
+    if (!isSupportedFile(file)) {
+      showError('対応しているのは PDF / TXT / JPG / PNG / WEBP ファイルです。');
+      return;
+    }
+    setSelectedFile(file);
+  }
+  apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
+  apiKeyInput.addEventListener('blur', saveApiKey);
+
+  uploadDropzone.addEventListener('click', () => fileInput.click());
+  uploadDropzone.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      fileInput.click();
+    }
+  });
+  uploadDropzone.addEventListener('dragover', event => {
+    event.preventDefault();
+    uploadDropzone.classList.add('dragover');
+  });
+  uploadDropzone.addEventListener('dragleave', () => {
+    uploadDropzone.classList.remove('dragover');
+  });
+  uploadDropzone.addEventListener('drop', event => {
+    event.preventDefault();
+    uploadDropzone.classList.remove('dragover');
+    if (!event.dataTransfer.files.length) return;
+    const [file] = event.dataTransfer.files;
+    handleIncomingFile(file);
+    if (event.dataTransfer.files.length > 1 && isSupportedFile(file)) {
+      showError('複数ファイルが選択されました。先頭の1件のみ処理します。');
+    }
+  });
+  fileInput.addEventListener('change', event => {
+    if (!event.target.files.length) return;
+    const [file] = event.target.files;
+    handleIncomingFile(file);
+  });
+  generateBtn.addEventListener('click', generateSummaryAndQuestions);
 
   // --- 初期化 ---
   const savedGoal = localStorage.getItem('goal');
