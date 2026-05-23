@@ -553,13 +553,11 @@
     if (!response.ok) {
       const message = data && data.error && data.error.message
         ? data.error.message
-        : 'OpenAI APIの呼び出しに失敗しました。';
+        : `OpenAI APIの呼び出しに失敗しました。(ステータス: ${response.status})`;
       throw new Error(message);
     }
 
-    const content = data && data.choices && data.choices[0] && data.choices[0].message
-      ? data.choices[0].message.content
-      : '';
+    const content = data?.choices?.[0]?.message?.content || '';
 
     if (!content) {
       throw new Error('AIから有効な応答を取得できませんでした。');
@@ -626,6 +624,9 @@
     if (!event.dataTransfer.files.length) return;
     const [file] = event.dataTransfer.files;
     handleIncomingFile(file);
+    if (event.dataTransfer.files.length > 1 && isSupportedFile(file)) {
+      showError('複数ファイルが選択されました。先頭の1件のみ処理します。');
+    }
   });
   fileInput.addEventListener('change', event => {
     if (!event.target.files.length) return;
