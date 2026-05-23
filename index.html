@@ -310,6 +310,7 @@
   }
 
   const API_KEY_STORAGE = 'openai-api-key';
+  const AI_PROMPT_TEMPLATE = `以下の内容を読んで、\n1. 200字程度で要約してください\n2. この内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
   const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   const apiKeyInput = document.getElementById('api-key-input');
   const fileInput = document.getElementById('file-input');
@@ -461,6 +462,15 @@
     generateBtn.classList.toggle('loading', isLoading);
   }
 
+  function saveApiKey() {
+    const value = apiKeyInput.value.trim();
+    if (value) {
+      localStorage.setItem(API_KEY_STORAGE, value);
+    } else {
+      localStorage.removeItem(API_KEY_STORAGE);
+    }
+  }
+
   function readFile(file, method) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -487,7 +497,6 @@
   }
 
   async function buildRequestPayload(file) {
-    const prompt = `以下の内容を読んで、\n1. 200字程度で要約してください\n2. この内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
     const lowerName = file.name.toLowerCase();
 
     if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
@@ -498,7 +507,7 @@
           {
             role: 'user',
             content: [
-              { type: 'text', text: prompt },
+              { type: 'text', text: AI_PROMPT_TEMPLATE },
               { type: 'image_url', image_url: { url: imageDataUrl } }
             ]
           }
@@ -519,7 +528,7 @@
       messages: [
         {
           role: 'user',
-          content: `${prompt}\n\n---\n${String(text).trim()}`
+          content: `${AI_PROMPT_TEMPLATE}\n\n---\n${String(text).trim()}`
         }
       ]
     };
@@ -535,7 +544,14 @@
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json().catch(() => ({}));
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      if (!response.ok) {
+        throw new Error(`OpenAI APIの応答を読み取れませんでした。${parseError.message}`);
+      }
+    }
     if (!response.ok) {
       const message = data && data.error && data.error.message
         ? data.error.message
@@ -561,6 +577,7 @@
       apiKeyInput.focus();
       return;
     }
+    saveApiKey();
     if (!selectedFile) {
       showError('ファイルを選択してから実行してください。');
       return;
@@ -588,11 +605,10 @@
     }
     setSelectedFile(file);
   }
-
   apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
-  apiKeyInput.addEventListener('input', () => {
-    localStorage.setItem(API_KEY_STORAGE, apiKeyInput.value);
-  });
+  apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
+  apiKeyInput.addEventListener('change', saveApiKey);
+  apiKeyInput.addEventListener('blur', saveApiKey);
 
   uploadDropzone.addEventListener('click', () => fileInput.click());
   uploadDropzone.addEventListener('keydown', event => {
@@ -611,10 +627,12 @@
   uploadDropzone.addEventListener('drop', event => {
     event.preventDefault();
     uploadDropzone.classList.remove('dragover');
+    if (!event.dataTransfer.files.length) return;
     const [file] = event.dataTransfer.files;
     handleIncomingFile(file);
   });
   fileInput.addEventListener('change', event => {
+    if (!event.target.files.length) return;
     const [file] = event.target.files;
     handleIncomingFile(file);
   });
