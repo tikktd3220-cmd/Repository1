@@ -43,10 +43,7 @@
       margin-bottom: 8px;
       font-weight: 600;
     }
-    .text-input,
-    #goal-input,
-    #task-input,
-    #log-input {
+    .text-input {
       width: 100%;
       padding: 10px;
       border: 1px solid #cbd5e0;
@@ -59,20 +56,6 @@
       font-size: 0.85rem;
     }
 
-    /* タイマー */
-    #timer-display {
-      font-size: 3rem;
-      text-align: center;
-      font-weight: bold;
-      color: #e53e3e;
-      margin: 12px 0;
-    }
-    .timer-label {
-      text-align: center;
-      font-size: 0.9rem;
-      color: #718096;
-      margin-bottom: 16px;
-    }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -89,59 +72,7 @@
       opacity: 0.7;
       cursor: not-allowed;
     }
-    .btn-red { background: #e53e3e; color: white; }
-    .btn-gray { background: #e2e8f0; color: #4a5568; }
     .btn-blue { background: #3182ce; color: white; }
-    .btn-green { background: #38a169; color: white; }
-    .timer-btns { text-align: center; }
-
-    /* 目標 */
-    #goal-input { margin-bottom: 10px; }
-    #goal-display {
-      background: #ebf8ff;
-      border-left: 4px solid #3182ce;
-      padding: 10px;
-      border-radius: 4px;
-      min-height: 40px;
-      font-size: 0.95rem;
-      color: #2b6cb0;
-    }
-
-    /* タスク */
-    .task-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    #task-input { flex: 1; }
-    #task-list { list-style: none; }
-    #task-list li {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 0;
-      border-bottom: 1px solid #edf2f7;
-      font-size: 0.95rem;
-    }
-    #task-list li.done span { text-decoration: line-through; color: #a0aec0; }
-    #task-list li input[type=checkbox] { cursor: pointer; }
-    .del-btn {
-      margin-left: auto;
-      background: none;
-      border: none;
-      color: #fc8181;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    /* 学習ログ */
-    .log-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    #log-input { flex: 1; }
-    #log-list { list-style: none; }
-    #log-list li {
-      padding: 6px 0;
-      border-bottom: 1px solid #edf2f7;
-      font-size: 0.9rem;
-      color: #4a5568;
-    }
-    #log-list li span.time { color: #a0aec0; font-size: 0.8rem; margin-right: 8px; }
-
     /* AI機能 */
     .wide-card {
       grid-column: 1 / -1;
@@ -236,10 +167,6 @@
       display: none;
       animation: spin 0.8s linear infinite;
     }
-    .btn-gray .spinner {
-      border: 2px solid rgba(74,85,104,0.3);
-      border-top-color: #4a5568;
-    }
     .btn.loading .spinner {
       display: inline-block;
     }
@@ -247,17 +174,9 @@
       to { transform: rotate(360deg); }
     }
     @media (max-width: 640px) {
-      .task-input-row,
-      .log-input-row {
-        flex-direction: column;
-      }
       .btn {
         width: 100%;
         margin: 4px 0;
-      }
-      .timer-btns .btn {
-        width: auto;
-        margin: 4px;
       }
     }
   </style>
@@ -292,46 +211,6 @@
     <div id="result-box" class="result-box"></div>
   </div>
 
-  <!-- ポモドーロタイマー -->
-  <div class="card">
-    <h2>⏱ ポモドーロタイマー</h2>
-    <div id="timer-display">25:00</div>
-    <div class="timer-label" id="timer-label">集中タイム 🔥</div>
-    <div class="timer-btns">
-      <button class="btn btn-red" onclick="startTimer()">スタート</button>
-      <button class="btn btn-gray" onclick="pauseTimer()">一時停止</button>
-      <button class="btn btn-gray" onclick="resetTimer()">リセット</button>
-    </div>
-  </div>
-
-  <!-- 今日の目標 -->
-  <div class="card">
-    <h2>🎯 今日の目標</h2>
-    <input type="text" id="goal-input" placeholder="今日の学習目標を入力..." />
-    <button class="btn btn-blue" onclick="saveGoal()" style="margin-bottom:12px;">保存</button>
-    <div id="goal-display">目標を設定しましょう！</div>
-  </div>
-
-  <!-- タスクリスト -->
-  <div class="card">
-    <h2>✅ タスクリスト</h2>
-    <div class="task-input-row">
-      <input type="text" id="task-input" placeholder="タスクを追加..." />
-      <button class="btn btn-green" onclick="addTask()">追加</button>
-    </div>
-    <ul id="task-list"></ul>
-  </div>
-
-  <!-- 学習ログ -->
-  <div class="card">
-    <h2>📝 学習ログ</h2>
-    <div class="log-input-row">
-      <input type="text" id="log-input" placeholder="学んだことを記録..." />
-      <button class="btn btn-blue" onclick="addLog()">記録</button>
-    </div>
-    <ul id="log-list"></ul>
-  </div>
-
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -358,114 +237,6 @@
   const errorMessage = document.getElementById('error-message');
   const resultBox = document.getElementById('result-box');
   let selectedFiles = [];
-
-  // --- タイマー ---
-  let totalSeconds = 25 * 60;
-  let timerInterval = null;
-  let isBreak = false;
-
-  function updateDisplay() {
-    const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-    const s = String(totalSeconds % 60).padStart(2, '0');
-    document.getElementById('timer-display').textContent = `${m}:${s}`;
-  }
-
-  function startTimer() {
-    if (timerInterval) return;
-    timerInterval = setInterval(() => {
-      if (totalSeconds > 0) {
-        totalSeconds--;
-        updateDisplay();
-      } else {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        isBreak = !isBreak;
-        totalSeconds = isBreak ? 5 * 60 : 25 * 60;
-        document.getElementById('timer-label').textContent = isBreak ? '休憩タイム ☕' : '集中タイム 🔥';
-        document.getElementById('timer-display').style.color = isBreak ? '#38a169' : '#e53e3e';
-        updateDisplay();
-        alert(isBreak ? '休憩タイムです！5分休憩しましょう☕' : '集中タイム開始！頑張りましょう🔥');
-        startTimer();
-      }
-    }, 1000);
-  }
-
-  function pauseTimer() {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-
-  function resetTimer() {
-    clearInterval(timerInterval);
-    timerInterval = null;
-    isBreak = false;
-    totalSeconds = 25 * 60;
-    document.getElementById('timer-label').textContent = '集中タイム 🔥';
-    document.getElementById('timer-display').style.color = '#e53e3e';
-    updateDisplay();
-  }
-
-  // --- 目標 ---
-  function saveGoal() {
-    const val = document.getElementById('goal-input').value.trim();
-    if (!val) return;
-    document.getElementById('goal-display').textContent = '🎯 ' + val;
-    localStorage.setItem('goal', val);
-  }
-
-  // --- タスク ---
-  let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
-
-  function renderTasks() {
-    const ul = document.getElementById('task-list');
-    ul.innerHTML = '';
-    tasks.forEach((t, i) => {
-      const li = document.createElement('li');
-      if (t.done) li.classList.add('done');
-      li.innerHTML = `
-        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${i})"/>
-        <span>${t.text}</span>
-        <button class="del-btn" onclick="deleteTask(${i})">✕</button>
-      `;
-      ul.appendChild(li);
-    });
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }
-
-  function addTask() {
-    const val = document.getElementById('task-input').value.trim();
-    if (!val) return;
-    tasks.push({ text: val, done: false });
-    document.getElementById('task-input').value = '';
-    renderTasks();
-  }
-
-  function toggleTask(i) { tasks[i].done = !tasks[i].done; renderTasks(); }
-  function deleteTask(i) { tasks.splice(i, 1); renderTasks(); }
-
-  // --- ログ ---
-  let logs = JSON.parse(localStorage.getItem('logs') || '[]');
-
-  function renderLogs() {
-    const ul = document.getElementById('log-list');
-    ul.innerHTML = '';
-    [...logs].reverse().forEach(l => {
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="time">${l.time}</span>${l.text}`;
-      ul.appendChild(li);
-    });
-    localStorage.setItem('logs', JSON.stringify(logs));
-  }
-
-  function addLog() {
-    const val = document.getElementById('log-input').value.trim();
-    if (!val) return;
-    const now = new Date();
-    const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-    logs.push({ text: val, time });
-    document.getElementById('log-input').value = '';
-    renderLogs();
-  }
 
   function renderFileList() {
     fileListDisplay.innerHTML = '';
@@ -751,17 +522,6 @@
     fileInput.value = ''; // Reset so the same file path can be selected again after removal
   });
   generateBtn.addEventListener('click', generateSummaryAndQuestions);
-
-  // --- 初期化 ---
-  const savedGoal = localStorage.getItem('goal');
-  if (savedGoal) document.getElementById('goal-display').textContent = '🎯 ' + savedGoal;
-  renderTasks();
-  renderLogs();
-
-  // Enterキー対応
-  document.getElementById('task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
-  document.getElementById('log-input').addEventListener('keydown', e => { if (e.key === 'Enter') addLog(); });
-  document.getElementById('goal-input').addEventListener('keydown', e => { if (e.key === 'Enter') saveGoal(); });
 </script>
 
 </body>
