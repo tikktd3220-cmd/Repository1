@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>学習ダッシュボード</title>
+  <title>AI学習アシスタント</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -18,17 +18,11 @@
       font-size: 1.8rem;
       color: #2d3748;
     }
-    .top-card,
-    .grid {
-      max-width: 1000px;
+    .top-card, .main-card {
+      max-width: 860px;
       margin: 0 auto;
     }
     .top-card { margin-bottom: 20px; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
     .card {
       background: white;
       border-radius: 16px;
@@ -55,7 +49,6 @@
       color: #718096;
       font-size: 0.85rem;
     }
-
     .btn {
       display: inline-flex;
       align-items: center;
@@ -68,15 +61,8 @@
       font-size: 0.95rem;
       margin: 4px;
     }
-    .btn:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
     .btn-blue { background: #3182ce; color: white; }
-    /* AI機能 */
-    .wide-card {
-      grid-column: 1 / -1;
-    }
     .upload-dropzone {
       border: 2px dashed #90cdf4;
       border-radius: 12px;
@@ -87,441 +73,218 @@
       transition: border-color 0.2s ease, background 0.2s ease;
       cursor: pointer;
     }
-    .upload-dropzone.dragover {
-      border-color: #3182ce;
-      background: #ebf8ff;
-    }
-    .upload-dropzone strong {
-      display: block;
-      margin-bottom: 6px;
-      color: #2d3748;
-    }
-    .file-list {
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .upload-dropzone.dragover { border-color: #3182ce; background: #ebf8ff; }
+    .upload-dropzone strong { display: block; margin-bottom: 6px; color: #2d3748; }
+    .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
     .file-list-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: #edf2f7;
-      color: #2d3748;
-      font-size: 0.9rem;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 8px;
+      background: #edf2f7; color: #2d3748; font-size: 0.9rem;
     }
-    .file-list-item span {
-      flex: 1;
-      word-break: break-word;
-    }
+    .file-list-item span { flex: 1; word-break: break-word; }
     .file-remove-btn {
-      background: none;
-      border: none;
-      color: #fc8181;
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 0 4px;
-      line-height: 1;
-      flex-shrink: 0;
+      background: none; border: none; color: #fc8181;
+      cursor: pointer; font-size: 1rem; padding: 0 4px; line-height: 1; flex-shrink: 0;
     }
-    .file-remove-btn:hover {
-      color: #e53e3e;
-    }
+    .file-remove-btn:hover { color: #e53e3e; }
     .file-list-empty {
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: #edf2f7;
-      color: #a0aec0;
-      font-size: 0.9rem;
+      padding: 10px 12px; border-radius: 8px;
+      background: #edf2f7; color: #a0aec0; font-size: 0.9rem;
     }
-    .status-box,
-    .result-box {
-      margin-top: 16px;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 0.92rem;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-word;
+    .status-box, .result-box {
+      margin-top: 16px; padding: 14px; border-radius: 10px;
+      font-size: 0.92rem; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
     }
-    .status-box {
-      display: none;
-      background: #fff5f5;
-      color: #c53030;
-      border: 1px solid #feb2b2;
-    }
-    .result-box {
-      display: none;
-      background: #f7fafc;
-      color: #2d3748;
-      border: 1px solid #e2e8f0;
-    }
+    .status-box { display: none; background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+    .result-box { display: none; background: #f7fafc; color: #2d3748; border: 1px solid #e2e8f0; }
     .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,0.45);
-      border-top-color: white;
-      border-radius: 50%;
-      display: none;
-      animation: spin 0.8s linear infinite;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.45); border-top-color: white;
+      border-radius: 50%; display: none; animation: spin 0.8s linear infinite;
     }
-    .btn.loading .spinner {
-      display: inline-block;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @media (max-width: 640px) {
-      .btn {
-        width: 100%;
-        margin: 4px 0;
-      }
-    }
+    .btn.loading .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 640px) { .btn { width: 100%; margin: 4px 0; } }
   </style>
 </head>
 <body>
 
-<h1>📚 学習ダッシュボード</h1>
+<h1>🤖 AI学習アシスタント</h1>
 
 <div class="top-card card">
   <h2>🔐 OpenAI APIキー</h2>
   <label class="field-label" for="api-key-input">APIキーを入力</label>
   <input type="password" id="api-key-input" class="text-input" placeholder="sk-..." autocomplete="off" />
-  <p class="helper-text">APIキーはこのブラウザの localStorage にのみ保存され、入力欄では非表示になります。共有端末や信頼できない環境では保存しないでください。</p>
+  <p class="helper-text">APIキーはこのブラウザの localStorage にのみ保存され、外部には送信されません。</p>
 </div>
 
-<div class="grid">
-
-  <!-- AI要約＆問題生成 -->
-  <div class="card wide-card">
-    <h2>🤖 AI要約＆記述問題生成</h2>
-    <input type="file" id="file-input" accept=".pdf,.txt,image/jpeg,image/png,image/webp" hidden multiple />
-    <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="ファイルをアップロード">
-      <strong>PDF / TXT / 画像ファイルをアップロード</strong>
-      <span>ドラッグ＆ドロップ、またはクリックして複数ファイルを選択</span>
-    </div>
-    <div id="file-list" class="file-list"><p class="file-list-empty">未選択</p></div>
-    <button id="generate-btn" class="btn btn-blue" style="margin-top:16px;">
-      <span class="spinner" aria-hidden="true"></span>
-      <span>要約＆問題生成</span>
-    </button>
-    <div id="error-message" class="status-box" role="alert"></div>
-    <div id="result-box" class="result-box"></div>
+<div class="main-card card">
+  <h2>🤖 AI要約＆記述問題生成</h2>
+  <input type="file" id="file-input" accept=".pdf,.txt" hidden multiple />
+  <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="ファイルをアップロード">
+    <strong>PDF / TXT ファイルをアップロード</strong>
+    <span>ドラッグ＆ドロップ、またはクリックして複数ファイルを選択</span>
   </div>
-
+  <div id="file-list" class="file-list"><p class="file-list-empty">未選択</p></div>
+  <button id="generate-btn" class="btn btn-blue" style="margin-top:16px;">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>要約＆問題生成</span>
+  </button>
+  <div id="error-message" class="status-box" role="alert"></div>
+  <div id="result-box" class="result-box"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
-  const PDF_READ_FALLBACK_MESSAGE = 'PDFをテキストとして読み込めませんでした。画像またはTXTファイルをお試しください。';
+  const MODEL = 'gpt-4o-mini';
+  const PDF_FALLBACK = 'PDFをテキストとして読み込めませんでした。TXTファイルをお試しください。';
+  const PROMPT_SINGLE = '以下の内容を読んで、\n1. 200字程度で要約してください\n2. この内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）\n\n';
+  const PROMPT_MULTI  = '以下の複数のファイルの内容を読んで、\n1. 全体を通じて200〜300字程度で総合的に要約してください\n2. これらの内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）\n\n';
 
   if (window.pdfjsLib) {
-    try {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    } catch (error) {
-      console.error('pdf.js worker 初期化に失敗しました。', error);
-    }
+    try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+    catch (e) { console.error('pdf.js worker error', e); }
   }
 
   const API_KEY_STORAGE = 'openai-api-key';
-  const AI_PROMPT_TEMPLATE = `以下の内容を読んで、\n1. 200字程度で要約してください\n2. この内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
-  const AI_MULTI_PROMPT_PREFIX = `以下の複数のファイルの内容を読んで、\n1. 全体を通じて200〜300字程度で総合的に要約してください\n2. これらの内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
-  const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-  const apiKeyInput = document.getElementById('api-key-input');
-  const fileInput = document.getElementById('file-input');
-  const uploadDropzone = document.getElementById('upload-dropzone');
-  const fileListDisplay = document.getElementById('file-list');
-  const generateBtn = document.getElementById('generate-btn');
-  const errorMessage = document.getElementById('error-message');
-  const resultBox = document.getElementById('result-box');
-  let selectedFiles = [];
+  const apiKeyInput   = document.getElementById('api-key-input');
+  const fileInput     = document.getElementById('file-input');
+  const dropzone      = document.getElementById('upload-dropzone');
+  const fileListEl    = document.getElementById('file-list');
+  const generateBtn   = document.getElementById('generate-btn');
+  const errorBox      = document.getElementById('error-message');
+  const resultBox     = document.getElementById('result-box');
+  let selectedFiles   = [];
+
+  const showError  = m  => { errorBox.style.display = 'block'; errorBox.textContent = m; };
+  const hideError  = () => { errorBox.style.display = 'none'; errorBox.textContent = ''; };
+  const showResult = c  => { resultBox.style.display = 'block'; resultBox.textContent = c; };
+  const setLoading = v  => { generateBtn.disabled = v; generateBtn.classList.toggle('loading', v); };
+  const saveApiKey = () => {
+    const v = apiKeyInput.value.trim();
+    v ? localStorage.setItem(API_KEY_STORAGE, v) : localStorage.removeItem(API_KEY_STORAGE);
+  };
+
+  function isSupportedFile(f) {
+    const n = f.name.toLowerCase();
+    return n.endsWith('.pdf') || n.endsWith('.txt');
+  }
 
   function renderFileList() {
-    fileListDisplay.innerHTML = '';
+    fileListEl.innerHTML = '';
     if (!selectedFiles.length) {
-      const empty = document.createElement('p');
-      empty.className = 'file-list-empty';
-      empty.textContent = '未選択';
-      fileListDisplay.appendChild(empty);
-      return;
+      const p = document.createElement('p');
+      p.className = 'file-list-empty'; p.textContent = '未選択';
+      fileListEl.appendChild(p); return;
     }
-    selectedFiles.forEach((file, index) => {
-      const item = document.createElement('div');
-      item.className = 'file-list-item';
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = file.name;
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'file-remove-btn';
-      removeBtn.textContent = '✕';
-      removeBtn.setAttribute('aria-label', `${file.name} を削除`);
-      removeBtn.addEventListener('click', () => removeFileFromSelection(index));
-      item.appendChild(nameSpan);
-      item.appendChild(removeBtn);
-      fileListDisplay.appendChild(item);
+    selectedFiles.forEach((file, i) => {
+      const item = document.createElement('div'); item.className = 'file-list-item';
+      const span = document.createElement('span'); span.textContent = file.name;
+      const btn  = document.createElement('button'); btn.className = 'file-remove-btn'; btn.textContent = '✕';
+      btn.setAttribute('aria-label', `${file.name} を削除`);
+      btn.addEventListener('click', () => { selectedFiles.splice(i, 1); renderFileList(); });
+      item.appendChild(span); item.appendChild(btn); fileListEl.appendChild(item);
     });
   }
 
   function addFilesToSelection(files) {
-    const fileArray = Array.from(files);
-    const unsupported = fileArray.filter(f => !isSupportedFile(f));
-    let addedCount = 0;
-    for (const file of fileArray) {
-      if (!isSupportedFile(file)) continue;
-      if (!selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
-        selectedFiles.push(file);
-        addedCount++;
-      }
+    const arr = Array.from(files);
+    const bad = arr.filter(f => !isSupportedFile(f));
+    let added = 0;
+    for (const f of arr) {
+      if (!isSupportedFile(f)) continue;
+      if (!selectedFiles.some(x => x.name === f.name && x.size === f.size)) { selectedFiles.push(f); added++; }
     }
     renderFileList();
-    if (unsupported.length > 0 && addedCount === 0) {
-      showError('対応しているのは PDF / TXT / JPG / PNG / WEBP ファイルです。');
-    } else if (unsupported.length > 0) {
-      showError(`${unsupported.length}件の非対応ファイルをスキップしました。`);
-    } else if (addedCount > 0) {
-      hideError();
-    }
-  }
-
-  function removeFileFromSelection(index) {
-    selectedFiles.splice(index, 1);
-    renderFileList();
-  }
-
-  function isSupportedFile(file) {
-    if (!file) return false;
-    const lowerName = file.name.toLowerCase();
-    return lowerName.endsWith('.pdf') || lowerName.endsWith('.txt') || SUPPORTED_IMAGE_TYPES.includes(file.type);
-  }
-
-  function showError(message) {
-    errorMessage.style.display = 'block';
-    errorMessage.textContent = message;
-  }
-
-  function hideError() {
-    errorMessage.style.display = 'none';
-    errorMessage.textContent = '';
-  }
-
-  function showResult(content) {
-    resultBox.style.display = 'block';
-    resultBox.textContent = content;
-  }
-
-  function setLoading(isLoading) {
-    generateBtn.disabled = isLoading;
-    generateBtn.classList.toggle('loading', isLoading);
-  }
-
-  function saveApiKey() {
-    const value = apiKeyInput.value.trim();
-    if (value) {
-      localStorage.setItem(API_KEY_STORAGE, value);
-    } else {
-      localStorage.removeItem(API_KEY_STORAGE);
-    }
+    if (bad.length && !added) showError('対応しているのは PDF / TXT ファイルです。');
+    else if (bad.length) showError(`${bad.length}件の非対応ファイルをスキップしました。`);
+    else if (added) hideError();
   }
 
   function readFile(file, method) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました。'));
-      reader[method](file);
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => rej(new Error('ファイルの読み込みに失敗しました。'));
+      r[method](file);
     });
   }
 
   async function extractPdfText(file) {
-    if (!window.pdfjsLib || typeof window.pdfjsLib.getDocument !== 'function') {
-      throw new Error(PDF_READ_FALLBACK_MESSAGE);
-    }
+    if (!window.pdfjsLib?.getDocument) throw new Error(PDF_FALLBACK);
     try {
-      const arrayBuffer = await readFile(file, 'readAsArrayBuffer');
-      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const texts = [];
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-        const page = await pdf.getPage(pageNumber);
-        const content = await page.getTextContent();
-        const pageText = content.items.map(item => item.str).join(' ');
-        texts.push(pageText);
+      const buf = await readFile(file, 'readAsArrayBuffer');
+      const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const c = await page.getTextContent();
+        pages.push(c.items.map(x => x.str).join(' '));
       }
-      return texts.join('\n');
-    } catch (error) {
-      console.error('PDFテキスト抽出に失敗しました。', error);
-      throw new Error(PDF_READ_FALLBACK_MESSAGE);
-    }
+      return pages.join('\n');
+    } catch (e) { throw new Error(PDF_FALLBACK); }
   }
 
-  async function buildMultiFilePayload(files) {
-    const textSections = [];
-    const imageParts = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const fileLabel = `[ファイル${i + 1}: ${file.name}]`;
-      if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-        const imageDataUrl = await readFile(file, 'readAsDataURL');
-        imageParts.push({ fileLabel, dataUrl: imageDataUrl });
-      } else {
-        const text = file.name.toLowerCase().endsWith('.pdf')
-          ? await extractPdfText(file)
-          : await readFile(file, 'readAsText');
-        if (!String(text).trim()) {
-          throw new Error(`${file.name} から読み取れる内容が見つかりませんでした。`);
-        }
-        textSections.push(`${fileLabel}\n${String(text).trim()}`);
-      }
-    }
-    if (imageParts.length === 0) {
-      return {
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: `${AI_MULTI_PROMPT_PREFIX}\n\n${textSections.join('\n\n')}` }]
-      };
-    }
-    const contentParts = [{ type: 'text', text: AI_MULTI_PROMPT_PREFIX }];
-    if (textSections.length > 0) {
-      contentParts.push({ type: 'text', text: `\n\n${textSections.join('\n\n')}` });
-    }
-    for (const { fileLabel, dataUrl } of imageParts) {
-      contentParts.push({ type: 'text', text: `\n\n${fileLabel}` });
-      contentParts.push({ type: 'image_url', image_url: { url: dataUrl } });
-    }
-    return { model: 'gpt-4o', messages: [{ role: 'user', content: contentParts }] };
-  }
-
-  async function buildRequestPayload(file) {
-    const lowerName = file.name.toLowerCase();
-
-    if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-      const imageDataUrl = await readFile(file, 'readAsDataURL');
-      return {
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: AI_PROMPT_TEMPLATE },
-              { type: 'image_url', image_url: { url: imageDataUrl } }
-            ]
-          }
-        ]
-      };
-    }
-
-    const text = lowerName.endsWith('.pdf')
+  async function getFileText(file) {
+    const text = file.name.toLowerCase().endsWith('.pdf')
       ? await extractPdfText(file)
       : await readFile(file, 'readAsText');
-
-    if (!String(text).trim()) {
-      throw new Error('ファイルから読み取れる内容が見つかりませんでした。別のファイルをお試しください。');
-    }
-
-    return {
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: `${AI_PROMPT_TEMPLATE}\n\n---\n${String(text).trim()}`
-        }
-      ]
-    };
+    if (!String(text).trim()) throw new Error(`「${file.name}」から読み取れる内容が見つかりませんでした。`);
+    return String(text).trim();
   }
 
-  async function requestSummaryAndQuestions(payload, apiKey) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  async function buildPayload(files) {
+    const sections = [];
+    for (let i = 0; i < files.length; i++) {
+      const text = await getFileText(files[i]);
+      sections.push(files.length > 1 ? `[ファイル${i+1}: ${files[i].name}]\n${text}` : text);
+    }
+    const prompt = (files.length > 1 ? PROMPT_MULTI : PROMPT_SINGLE) + sections.join('\n\n');
+    return { model: MODEL, messages: [{ role: 'user', content: prompt }] };
+  }
+
+  async function callOpenAI(payload, apiKey) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify(payload)
     });
-
     let data = {};
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      throw new Error(`OpenAI APIの応答を読み取れませんでした。${parseError.message}`);
-    }
-    if (!response.ok) {
-      const message = data && data.error && data.error.message
-        ? data.error.message
-        : `OpenAI APIの呼び出しに失敗しました。(ステータス: ${response.status})`;
-      throw new Error(message);
-    }
-
+    try { data = await res.json(); } catch { throw new Error('OpenAI APIの応答を読み取れませんでした。'); }
+    if (!res.ok) throw new Error(data?.error?.message || `APIエラー (ステータス: ${res.status})`);
     const content = data?.choices?.[0]?.message?.content || '';
-
-    if (!content) {
-      throw new Error('AIから有効な応答を取得できませんでした。');
-    }
-
+    if (!content) throw new Error('AIから有効な応答を取得できませんでした。');
     return content;
   }
 
-  async function generateSummaryAndQuestions() {
+  async function generate() {
     const apiKey = apiKeyInput.value.trim();
-    if (!apiKey) {
-      alert('OpenAI APIキーを入力してください。');
-      apiKeyInput.focus();
-      return;
-    }
+    if (!apiKey) { alert('OpenAI APIキーを入力してください。'); apiKeyInput.focus(); return; }
     saveApiKey();
-    if (!selectedFiles.length) {
-      showError('ファイルを選択してから実行してください。');
-      return;
-    }
-    hideError();
-    showResult('');
-    resultBox.style.display = 'none';
-    setLoading(true);
-
+    if (!selectedFiles.length) { showError('ファイルを選択してから実行してください。'); return; }
+    hideError(); resultBox.style.display = 'none'; setLoading(true);
     try {
-      const payload = selectedFiles.length === 1
-        ? await buildRequestPayload(selectedFiles[0])
-        : await buildMultiFilePayload(selectedFiles);
-      const result = await requestSummaryAndQuestions(payload, apiKey);
+      const result = await callOpenAI(await buildPayload(selectedFiles), apiKey);
       showResult(result);
-    } catch (error) {
-      showError(error.message || '処理中にエラーが発生しました。');
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) {
+      showError(e.message || '処理中にエラーが発生しました。');
+    } finally { setLoading(false); }
   }
 
-  function handleIncomingFile(file) {
-    addFilesToSelection([file]);
-  }
   apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
   apiKeyInput.addEventListener('blur', saveApiKey);
-
-  uploadDropzone.addEventListener('click', () => fileInput.click());
-  uploadDropzone.addEventListener('keydown', event => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      fileInput.click();
-    }
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault(); dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) addFilesToSelection(e.dataTransfer.files);
   });
-  uploadDropzone.addEventListener('dragover', event => {
-    event.preventDefault();
-    uploadDropzone.classList.add('dragover');
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) { addFilesToSelection(e.target.files); fileInput.value = ''; }
   });
-  uploadDropzone.addEventListener('dragleave', () => {
-    uploadDropzone.classList.remove('dragover');
-  });
-  uploadDropzone.addEventListener('drop', event => {
-    event.preventDefault();
-    uploadDropzone.classList.remove('dragover');
-    if (!event.dataTransfer.files.length) return;
-    addFilesToSelection(event.dataTransfer.files);
-  });
-  fileInput.addEventListener('change', event => {
-    if (!event.target.files.length) return;
-    addFilesToSelection(event.target.files);
-    fileInput.value = ''; // Reset so the same file path can be selected again after removal
-  });
-  generateBtn.addEventListener('click', generateSummaryAndQuestions);
+  generateBtn.addEventListener('click', generate);
 </script>
 
 </body>
