@@ -165,14 +165,45 @@
       margin-bottom: 6px;
       color: #2d3748;
     }
-    .file-name {
+    .file-list {
       margin-top: 12px;
-      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .file-list-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
       border-radius: 8px;
       background: #edf2f7;
       color: #2d3748;
       font-size: 0.9rem;
+    }
+    .file-list-item span {
+      flex: 1;
       word-break: break-word;
+    }
+    .file-remove-btn {
+      background: none;
+      border: none;
+      color: #fc8181;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .file-remove-btn:hover {
+      color: #e53e3e;
+    }
+    .file-list-empty {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #edf2f7;
+      color: #a0aec0;
+      font-size: 0.9rem;
     }
     .status-box,
     .result-box {
@@ -247,12 +278,12 @@
   <!-- AI要約＆問題生成 -->
   <div class="card wide-card">
     <h2>🤖 AI要約＆記述問題生成</h2>
-    <input type="file" id="file-input" accept=".pdf,.txt,image/jpeg,image/png,image/webp" hidden />
+    <input type="file" id="file-input" accept=".pdf,.txt,image/jpeg,image/png,image/webp" hidden multiple />
     <div id="upload-dropzone" class="upload-dropzone" tabindex="0" role="button" aria-label="ファイルをアップロード">
       <strong>PDF / TXT / 画像ファイルをアップロード</strong>
-      <span>ドラッグ＆ドロップ、またはクリックしてファイルを選択</span>
+      <span>ドラッグ＆ドロップ、またはクリックして複数ファイルを選択</span>
     </div>
-    <div id="file-name" class="file-name">未選択</div>
+    <div id="file-list" class="file-list"><p class="file-list-empty">未選択</p></div>
     <button id="generate-btn" class="btn btn-blue" style="margin-top:16px;">
       <span class="spinner" aria-hidden="true"></span>
       <span>要約＆問題生成</span>
@@ -317,15 +348,16 @@
 
   const API_KEY_STORAGE = 'openai-api-key';
   const AI_PROMPT_TEMPLATE = `以下の内容を読んで、\n1. 200字程度で要約してください\n2. この内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
+  const AI_MULTI_PROMPT_PREFIX = `以下の複数のファイルの内容を読んで、\n1. 全体を通じて200〜300字程度で総合的に要約してください\n2. これらの内容に基づいた記述問題を3問作成してください（各問に模範解答も付けてください）`;
   const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   const apiKeyInput = document.getElementById('api-key-input');
   const fileInput = document.getElementById('file-input');
   const uploadDropzone = document.getElementById('upload-dropzone');
-  const fileNameDisplay = document.getElementById('file-name');
+  const fileListDisplay = document.getElementById('file-list');
   const generateBtn = document.getElementById('generate-btn');
   const errorMessage = document.getElementById('error-message');
   const resultBox = document.getElementById('result-box');
-  let selectedFile = null;
+  let selectedFiles = [];
 
   // --- タイマー ---
   let totalSeconds = 25 * 60;
@@ -435,11 +467,55 @@
     renderLogs();
   }
 
-  function setSelectedFile(file) {
-    if (!file) return;
-    selectedFile = file;
-    fileNameDisplay.textContent = `選択中: ${file.name}`;
-    hideError();
+  function renderFileList() {
+    fileListDisplay.innerHTML = '';
+    if (!selectedFiles.length) {
+      const empty = document.createElement('p');
+      empty.className = 'file-list-empty';
+      empty.textContent = '未選択';
+      fileListDisplay.appendChild(empty);
+      return;
+    }
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.className = 'file-list-item';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = file.name;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'file-remove-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.setAttribute('aria-label', `${file.name} を削除`);
+      removeBtn.addEventListener('click', () => removeFileFromSelection(index));
+      item.appendChild(nameSpan);
+      item.appendChild(removeBtn);
+      fileListDisplay.appendChild(item);
+    });
+  }
+
+  function addFilesToSelection(files) {
+    const fileArray = Array.from(files);
+    const unsupported = fileArray.filter(f => !isSupportedFile(f));
+    let addedCount = 0;
+    for (const file of fileArray) {
+      if (!isSupportedFile(file)) continue;
+      if (!selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
+        selectedFiles.push(file);
+        addedCount++;
+      }
+    }
+    renderFileList();
+    if (unsupported.length > 0 && addedCount === 0) {
+      showError('対応しているのは PDF / TXT / JPG / PNG / WEBP ファイルです。');
+    } else if (unsupported.length > 0) {
+      showError(`${unsupported.length}件の非対応ファイルをスキップしました。`);
+    } else if (addedCount > 0) {
+      hideError();
+    }
+  }
+
+  function removeFileFromSelection(index) {
+    selectedFiles.splice(index, 1);
+    renderFileList();
   }
 
   function isSupportedFile(file) {
@@ -505,6 +581,42 @@
       console.error('PDFテキスト抽出に失敗しました。', error);
       throw new Error(PDF_READ_FALLBACK_MESSAGE);
     }
+  }
+
+  async function buildMultiFilePayload(files) {
+    const textSections = [];
+    const imageParts = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileLabel = `[ファイル${i + 1}: ${file.name}]`;
+      if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+        const imageDataUrl = await readFile(file, 'readAsDataURL');
+        imageParts.push({ fileLabel, dataUrl: imageDataUrl });
+      } else {
+        const text = file.name.toLowerCase().endsWith('.pdf')
+          ? await extractPdfText(file)
+          : await readFile(file, 'readAsText');
+        if (!String(text).trim()) {
+          throw new Error(`${file.name} から読み取れる内容が見つかりませんでした。`);
+        }
+        textSections.push(`${fileLabel}\n${String(text).trim()}`);
+      }
+    }
+    if (imageParts.length === 0) {
+      return {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: `${AI_MULTI_PROMPT_PREFIX}\n\n${textSections.join('\n\n')}` }]
+      };
+    }
+    const contentParts = [{ type: 'text', text: AI_MULTI_PROMPT_PREFIX }];
+    if (textSections.length > 0) {
+      contentParts.push({ type: 'text', text: `\n\n${textSections.join('\n\n')}` });
+    }
+    for (const { fileLabel, dataUrl } of imageParts) {
+      contentParts.push({ type: 'text', text: `\n\n${fileLabel}` });
+      contentParts.push({ type: 'image_url', image_url: { url: dataUrl } });
+    }
+    return { model: 'gpt-4o', messages: [{ role: 'user', content: contentParts }] };
   }
 
   async function buildRequestPayload(file) {
@@ -585,7 +697,7 @@
       return;
     }
     saveApiKey();
-    if (!selectedFile) {
+    if (!selectedFiles.length) {
       showError('ファイルを選択してから実行してください。');
       return;
     }
@@ -595,7 +707,9 @@
     setLoading(true);
 
     try {
-      const payload = await buildRequestPayload(selectedFile);
+      const payload = selectedFiles.length === 1
+        ? await buildRequestPayload(selectedFiles[0])
+        : await buildMultiFilePayload(selectedFiles);
       const result = await requestSummaryAndQuestions(payload, apiKey);
       showResult(result);
     } catch (error) {
@@ -606,11 +720,7 @@
   }
 
   function handleIncomingFile(file) {
-    if (!isSupportedFile(file)) {
-      showError('対応しているのは PDF / TXT / JPG / PNG / WEBP ファイルです。');
-      return;
-    }
-    setSelectedFile(file);
+    addFilesToSelection([file]);
   }
   apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
   apiKeyInput.addEventListener('blur', saveApiKey);
@@ -633,16 +743,12 @@
     event.preventDefault();
     uploadDropzone.classList.remove('dragover');
     if (!event.dataTransfer.files.length) return;
-    const [file] = event.dataTransfer.files;
-    handleIncomingFile(file);
-    if (event.dataTransfer.files.length > 1 && isSupportedFile(file)) {
-      showError('複数ファイルが選択されました。先頭の1件のみ処理します。');
-    }
+    addFilesToSelection(event.dataTransfer.files);
   });
   fileInput.addEventListener('change', event => {
     if (!event.target.files.length) return;
-    const [file] = event.target.files;
-    handleIncomingFile(file);
+    addFilesToSelection(event.target.files);
+    fileInput.value = ''; // Reset so the same file path can be selected again after removal
   });
   generateBtn.addEventListener('click', generateSummaryAndQuestions);
 
