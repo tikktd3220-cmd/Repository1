@@ -303,10 +303,16 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
+  const PDF_READ_FALLBACK_MESSAGE = 'PDFをテキストとして読み込めませんでした。画像またはTXTファイルをお試しください。';
+
   if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js';
+    try {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    } catch (error) {
+      console.error('pdf.js worker 初期化に失敗しました。', error);
+    }
   }
 
   const API_KEY_STORAGE = 'openai-api-key';
@@ -481,19 +487,24 @@
   }
 
   async function extractPdfText(file) {
-    if (!window.pdfjsLib) {
-      throw new Error('PDF読み込みライブラリの初期化に失敗しました。ページを再読み込みしてください。');
+    if (!window.pdfjsLib || typeof window.pdfjsLib.getDocument !== 'function') {
+      throw new Error(PDF_READ_FALLBACK_MESSAGE);
     }
-    const arrayBuffer = await readFile(file, 'readAsArrayBuffer');
-    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const texts = [];
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-      const page = await pdf.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const pageText = content.items.map(item => item.str).join(' ');
-      texts.push(pageText);
+    try {
+      const arrayBuffer = await readFile(file, 'readAsArrayBuffer');
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const texts = [];
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        texts.push(pageText);
+      }
+      return texts.join('\n');
+    } catch (error) {
+      console.error('PDFテキスト抽出に失敗しました。', error);
+      throw new Error(PDF_READ_FALLBACK_MESSAGE);
     }
-    return texts.join('\n');
   }
 
   async function buildRequestPayload(file) {
