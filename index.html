@@ -311,6 +311,7 @@
     try {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     } catch (error) {
+      console.error('pdf.js worker 初期化に失敗しました。', error);
       window.pdfjsLib = null;
     }
   }
@@ -503,6 +504,7 @@
       }
       return texts.join('\n');
     } catch (error) {
+      console.error('PDFテキスト抽出に失敗しました。', error);
       throw new Error(PDF_READ_FALLBACK_MESSAGE);
     }
   }
